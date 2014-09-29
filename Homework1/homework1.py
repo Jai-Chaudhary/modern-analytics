@@ -1,6 +1,6 @@
 import math
 import numpy as numpy
-# import pandas as pd
+import csv as csv
 from pprint import pprint
 from matplotlib import dates as dates
 from datetime import datetime as datetime
@@ -43,7 +43,7 @@ def outlier_filter_percentile(x):
         q75, q25 = numpy.percentile(x, [75 ,25])
         return [data_point for data_point in x if q25 < data_point < q75 ]
     else:
-        unfiltered_x = x  
+        unfiltered_x = x
         q75, q25  = numpy.percentile(x, [75 ,25], axis = 0)
         for i in xrange(len(x[0])):
             filtered_x = [data_point for data_point in unfiltered_x if (q25[i] < data_point[i] < q75[i]) ]
@@ -58,7 +58,7 @@ def outlier_filter_std_dev(x):
         q75, q25 = numpy.percentile(x, [75 ,25])
         return [data_point for data_point in x if (u - m * s < data_point < u + m * s) ]
     else:
-        unfiltered_x = x  
+        unfiltered_x = x
         for i in xrange(len(x[0])):
             filtered_x = [data_point for data_point in unfiltered_x if (u[i] - m * s[i] < data_point[i] < u[i] + m * s[i]) ]
             unfiltered_x = filtered_x
@@ -69,7 +69,7 @@ def scatter_plots(data_features):
     (data_points_count,attributes_count) = data_features.shape
     figure, subplots = plt.subplots(attributes_count, attributes_count)
     figure.suptitle('Taxi Data')
-    label_names = ['pickup_time', 'trip_distance', 'shortest_distances','trip_time']
+    label_names = ['plong', 'plat', 'dlong', 'dlat','pickup_time', 'trip_distance', 'shortest_distances','trip_time']
     transpose_data_feature = [[row[i] for row in data_features] for i in range(attributes_count)]
 
     for x_axis in range(attributes_count):
@@ -116,9 +116,63 @@ def orthogonal_distance_of_prediction(date_point, data_point_y_predicted, data_p
     orthogonal_distance = numpy.linalg.norm(vector_from_orig_point_to_orthogonal_point_on_line)
     return orthogonal_distance
 
+
+
+def linear_regression_test_on_huge_file(training_data):
+    clf = linear_model.LinearRegression()
+    clf.fit(training_data[:,0:2], training_data[:,3])
+    q75, q25  = numpy.percentile(training_data, [75 ,25], axis = 0)
+    print q75, q25
+    OLS_error = 0
+    TLS_error = 0
+    predicted_vars = []
+    test_output_vars = []
+
+    with open('../../trip_data_2.csv', "rb") as csvfile:
+        datareader = csv.reader(csvfile)
+        error_count = 0
+        test_data = []
+        for row in datareader:
+            # row = row.strip().split(',')
+            trip_time,trip_distance,plong,plat,dlong,dlat=row[-6:]
+            pickup_time = row[6]
+            try:
+                plong = float(plong)
+                plat = float(plat)
+                dlong = float(dlong)
+                dlat = float(dlat)
+                shortest_distances = get_distance(plat,plong,dlat,dlong)
+                pickup_time = dates.date2num(datetime.strptime(pickup_time, "%Y-%m-%d %H:%M:%S"))
+                trip_distance = float(trip_distance)
+                test_data = [pickup_time, trip_distance, shortest_distances, int(trip_time)]
+            except:
+                error_count += 1
+                print error_count,plong,plat,dlong,dlat
+            outlier = False
+            for i in xrange(2,len(test_data)):
+                if (q25[i] > test_data[i] or test_data[i] > q75[i]):
+                    outlier = True
+            if not (outlier) and len(test_data) > 0:
+                test_input_features = numpy.array(test_data[0:2])
+                predicted_var = clf.predict(test_input_features)
+                test_output_var = test_data[3]
+                OLS_error = OLS_error + (predicted_var - test_output_var) ** 2
+                TLS_error = TLS_error + orthogonal_distance_of_prediction(test_input_features, predicted_var, test_output_var, clf.coef_)
+                predicted_vars.append(predicted_var)
+                test_output_vars.append(test_output_var)
+    print len(test_output_vars), len(predicted_vars)
+    correlation_coefficient = 1 - (numpy.linalg.norm(test_output_vars - predicted_vars) ** 2) / (numpy.linalg.norm(test_output_vars - test_output_vars.mean())**2)
+    print OLS_error, TLS_error, correlation_coefficient
+
+def normalize_features(data):
+    u = numpy.mean(data, axis=0)
+    s = numpy.std(data, axis=0)
+    return numpy.array([[(data_point - u[i])/s[i] for data_point in data[:,i]] for i in xrange(data.shape[1])])
+
+
 def load():
     distances = []
-    data_features = []
+    total_data = []
     trip_times = []
     error_count = 0
     for line in file('example_data.csv'):
@@ -134,14 +188,16 @@ def load():
             distances.append(shortest_distances)
             pickup_time = dates.date2num(datetime.strptime(pickup_time, "%Y-%m-%d %H:%M:%S"))
             trip_distance = float(trip_distance)
-            data_features.append([pickup_time, trip_distance, shortest_distances, int(trip_time)])
+            total_data.append([plong, plat, dlong, dlat, pickup_time, trip_distance, shortest_distances, int(trip_time)])
         except:
             error_count += 1
             print error_count,plong,plat,dlong,dlat
-    filtered_features = outlier_filter_percentile(numpy.array(data_features))
-    scatter_plots(numpy.array(filtered_features))
-    test_data, training_data = test_train_distribute(data_features)
-    linear_regression(training_data[:,0:2], training_data[:,3], test_data[:,0:2], test_data[:,3])
+    filtered_data = outlier_filter_percentile(numpy.array(total_data))
+    # scatter_plots(numpy.array(filtered_data))
+    # test_data, training_data = test_train_distribute(total_data)
+    # linear_regression(training_data[:,0:2], training_data[:,3], test_data[:,0:2], test_data[:,3])
+    # linear_regression_test_on_huge_file(numpy.array(total_data))
+    normalized_data = normalize_features(numpy.array(total_data))
 
 
 if __name__ == '__main__':
