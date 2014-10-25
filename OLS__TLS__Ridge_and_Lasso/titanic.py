@@ -43,14 +43,13 @@ def preprocess_data(filename):
     ids = data_frame['PassengerId'].values
     # Remove the Name column, Cabin, Ticket, and Sex (since I copied and filled it to Gender)
     data_frame = data_frame.drop(['Name', 'Sex', 'Ticket', 'Cabin', 'PassengerId'], axis=1) 
-
+    print data_frame
     return ids, data_frame.values
 
 
 
 if __name__ == '__main__':
     train_ids, train_data = preprocess_data('train.csv')
-    print train_data
     test_ids, test_data = preprocess_data('test.csv')
     clf = linear_model.LogisticRegression()
     clf.fit(train_data[0::,1::], train_data[0::,0])
