@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-__author__ = 'aub3'
+__author__ = 'Jai Chaudhary'
 
 
 # code taken from

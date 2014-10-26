@@ -74,6 +74,17 @@ def ifilter(row):
     return True
 
 
+def distance_filter(row):
+    """
+    :param row:
+    :return row:
+    """
+    if row[1] != 0.0 and row[2] != 0.0 and row[3] != 0.0 and row[4] != 0.0 and row[5] != 0.0 and row[6] != 0.0: # filters out rows with zero elements
+        plong,plat,dlong,dlat=row[-4:]
+        if 100 > get_distance(plat,plong,dlat,dlong) > 0: # one of the many cool features of python
+            return True
+    return False
+
 def load_csv_lazy(fname,str_fields,float_fields,exclude_first=True,row_filter=ifilter,row_tranformer=itransformer):
     """
     np.genfromtxt is a good alternative, not sure if it can act as a generator. pandas frames are also a good alternative.

@@ -1,12 +1,12 @@
-__author__ = 'aub3'
+__author__ = 'Jai Chaudhary'
 """
 All constants should go here.
 """
 
-EXAMPLE_DATA = "data/example_data.csv" # small data files (ideally < 5 MB) should be stored in data folder
-TRIP_DATA_1 = "/Users/aub3/code/taxidata/trip_data_1.csv" # Large data files can be outside your directory structure
-TRIP_DATA_2 = "/Users/aub3/code/taxidata/trip_data_2.csv" # Large data files can be outside your directory structure
-TRAIN_DATA = "/Users/aub3/code/taxidata/train_data.csv" # contains every 20th trip from trip_data_2.csv
+EXAMPLE_DATA = "/Users/jaichaudhary/Documents/COURSES/Cornell/Modern Analytics/Homeworks/taxidata/example_data.csv" # small data files (ideally < 5 MB) should be stored in data folder
+TRIP_DATA_1 = "/Users/jaichaudhary/Documents/COURSES/Cornell/Modern Analytics/Homeworks/taxidata/trip_data_1.csv" # Large data files can be outside your directory structure
+TRIP_DATA_2 = "/Users/jaichaudhary/Documents/COURSES/Cornell/Modern Analytics/Homeworks/taxidata/trip_data_2.csv" # Large data files can be outside your directory structure
+TRAIN_DATA = "/Users/jaichaudhary/Documents/COURSES/Cornell/Modern Analytics/Homeworks/taxidata/train_data.csv" # contains every 20th trip from trip_data_2.csv
 
 FILE_FORMAT ={
     '0':'medallion',
