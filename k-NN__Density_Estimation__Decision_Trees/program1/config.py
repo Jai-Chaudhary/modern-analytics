@@ -25,5 +25,5 @@ FILE_FORMAT ={
     '13':'dropoff_latitude'
 }
 
-F_FIELDS  = [8,9,10,11,12,13] # Float fields
+F_FIELDS  = [7, 8,9,10,11,12,13] # Float fields
 S_FIELDS = [5,] # String fields
