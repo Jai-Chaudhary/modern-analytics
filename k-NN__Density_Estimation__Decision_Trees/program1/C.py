@@ -1,7 +1,5 @@
 __author__ = 'Jai Chaudhary'
 
-__author__ = 'Jai Chaudhary'
-
 from sklearn.neighbors import KNeighborsRegressor
 import numpy as np
 import argparse
