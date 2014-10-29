@@ -1,0 +1,12 @@
+2014-10-29 10:04:33,951 - DEBUG - count : 9
+2014-10-29 10:04:33,951 - DEBUG - error_count : 0
+2014-10-29 10:04:33,951 - DEBUG - excluded_count : 0
+2014-10-29 10:04:33,951 - DEBUG - count : 9
+2014-10-29 10:04:33,951 - DEBUG - error_count : 0
+2014-10-29 10:04:33,951 - DEBUG - excluded_count : 0
+2014-10-29 10:04:37,568 - DEBUG - count : 99999
+2014-10-29 10:04:37,568 - DEBUG - error_count : 133
+2014-10-29 10:04:37,568 - DEBUG - excluded_count : 3097
+2014-10-29 10:04:38,652 - DEBUG - count : 99999
+2014-10-29 10:04:38,652 - DEBUG - error_count : 133
+2014-10-29 10:04:38,652 - DEBUG - excluded_count : 3097

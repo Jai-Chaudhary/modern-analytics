@@ -1,5 +1,7 @@
 __author__ = 'Jai Chaudhary'
 
+import logging
+logging.basicConfig(filename='logs/normalizedoneNN.log',level=logging.DEBUG,format='%(asctime)s - %(levelname)s - %(message)s')
 from sklearn.neighbors import KNeighborsRegressor
 import numpy as np
 import argparse
@@ -7,18 +9,17 @@ import code.utils as utils
 from config import TRIP_DATA_1,TRAIN_DATA,F_FIELDS,S_FIELDS
 from datetime import datetime
 
-normalize_u = None
-normalize_s = None
 
-def set_normalize_params(records):
-    global normalize_u
-    global normalize_s
+def derive_normalizer(records):
     normalize_u = np.mean(records, axis=0) 
     normalize_s = np.std(records, axis=0)
-
-
-def normalize(records):
-    return np.divide(np.subtract(records, normalize_u * np.ones(records.shape, dtype=np.float)), normalize_s * np.ones(records.shape, dtype=np.float)) 
+    def normalizer(records):
+        try:
+            return np.divide(np.subtract(records, normalize_u * np.ones(records.shape, dtype=np.float)), normalize_s * np.ones(records.shape, dtype=np.float)) 
+        except:
+            logging.exception("Scaling error")
+            raise ValueError
+    return normalizer
 
 def datestring_to_seconds_from_midnight(dateStr):
     datetimeObj = datetime.strptime(dateStr, "%Y-%m-%d %H:%M:%S")
@@ -26,8 +27,8 @@ def datestring_to_seconds_from_midnight(dateStr):
 
 def oneNN(trainOn, testOn):
     trainX = np.array([[datestring_to_seconds_from_midnight(row[0])] + row[-5:] for row in utils.load_csv_lazy(TRAIN_DATA, S_FIELDS,F_FIELDS,row_filter=utils.distance_filter)], dtype = float)
-    set_normalize_params(trainX)
-    trainX = normalize(trainX)
+    normalizer = derive_normalizer(trainX)
+    trainX = normalizer(trainX)
     
     trainY = np.array([row[2] for row in utils.load_csv_lazy(TRAIN_DATA, S_FIELDS,F_FIELDS,row_filter=utils.distance_filter)], dtype = float)
 
@@ -35,7 +36,7 @@ def oneNN(trainOn, testOn):
     print "Train Complete"
     
     testX = np.array([[datestring_to_seconds_from_midnight(row[0])] + row[-5:] for row in utils.load_csv_lazy(TRIP_DATA_1, S_FIELDS,F_FIELDS,row_filter=utils.distance_filter)], dtype = float)
-    testX = normalize(testX)
+    testX = normalizer(testX)
     
     testY = np.array([row[2] for row in utils.load_csv_lazy(TRIP_DATA_1, S_FIELDS,F_FIELDS,row_filter=utils.distance_filter)], dtype = float)
     

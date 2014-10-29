@@ -2,6 +2,9 @@ __author__ = 'Jai Chaudhary'
 
 __author__ = 'Jai Chaudhary'
 
+
+import logging
+logging.basicConfig(filename='logs/oneNNBasic.log',level=logging.DEBUG,format='%(asctime)s - %(levelname)s - %(message)s')
 from sklearn.neighbors import KNeighborsRegressor
 import numpy as np
 import argparse

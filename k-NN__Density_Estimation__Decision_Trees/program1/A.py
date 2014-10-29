@@ -1,12 +1,16 @@
 __author__ = 'Jai Chaudhary'
 
-from sklearn.neighbors.kde import KernelDensity
+import logging
+logging.basicConfig(filename='logs/densityestimation.log',level=logging.DEBUG,format='%(asctime)s - %(levelname)s - %(message)s')
 import numpy as np
 import argparse
 import code.utils as utils
-from config import TRIP_DATA_1,TRIP_DATA_2,EXAMPLE_DATA,F_FIELDS,S_FIELDS
+from config import TRIP_DATA_1,EXAMPLE_DATA,F_FIELDS,S_FIELDS
 import matplotlib.pyplot as plt
-from sklearn.grid_search import GridSearchCV
+
+# from sklearn.neighbors.kde import KernelDensity
+# from sklearn.grid_search import GridSearchCV
+
 
 DEFAULT_DATASET = 'train_data.csv'
 DATASETS = [ DEFAULT_DATASET]
