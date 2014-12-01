@@ -1,4 +1,4 @@
-import decision_tree
+import decision_tree as dt
 import scan
 import utils
 
@@ -13,9 +13,9 @@ def main():
     test_data = data[int(length*.8):]
 
     decision_tree = dt.train(train_data)
-    test_results = dt.test(decision_tree, test_data)
+    test_results = dt.test(decision_tree, train_data)
 
-    print test_results
+    # print test_results
 
 if __name__ == '__main__':
     main()

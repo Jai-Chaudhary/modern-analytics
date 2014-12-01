@@ -17,7 +17,7 @@ def datestring_to_seconds_from_midnight(dateStr):
 def oneNN(trainOn, testOn):
 	trainX = np.array([[datestring_to_seconds_from_midnight(row[0])] + row[-5:] for row in utils.load_csv_lazy(TRAIN_DATA, S_FIELDS,F_FIELDS,row_filter=utils.distance_filter)], dtype = float)
 	trainY = np.array([row[2] for row in utils.load_csv_lazy(TRAIN_DATA, S_FIELDS,F_FIELDS,row_filter=utils.distance_filter)], dtype = float)
-	nbrs = KNeighborsRegressor(n_neighbors=1, algorithm='ball_tree').fit(trainX[:trainOn], trainY[:trainOn])
+	nbrs = KNeighborsRegressor(n_neighbors=1, algorithm='brute').fit(trainX[:trainOn], trainY[:trainOn])
 	print "Train Complete"
 	testX = np.array([[datestring_to_seconds_from_midnight(row[0])] + row[-5:] for row in utils.load_csv_lazy(TRIP_DATA_1, S_FIELDS,F_FIELDS,row_filter=utils.distance_filter)], dtype = float)
 	testY = np.array([row[2] for row in utils.load_csv_lazy(TRIP_DATA_1, S_FIELDS,F_FIELDS,row_filter=utils.distance_filter)], dtype = float)
@@ -25,8 +25,8 @@ def oneNN(trainOn, testOn):
 
 def main():
 	parser = argparse.ArgumentParser( description = '1-Nearest Neighbour to predict trip_time' )
-	parser.add_argument( 'trainOn' , nargs = '?', type = int, default = 100, help = 'Number of data points to train on' )
-	parser.add_argument( 'testOn' , nargs = '?', type = int, default = 100, help = 'Number of data points to test on' )
+	parser.add_argument( 'trainOn' , nargs = '?', type = int, default = 500000, help = 'Number of data points to train on' )
+	parser.add_argument( 'testOn' , nargs = '?', type = int, default = 100000, help = 'Number of data points to test on' )
 	args = parser.parse_args()
 	print args.trainOn, args.testOn
 	oneNN( args.trainOn, args.testOn )

@@ -14,7 +14,7 @@ def metrics(model,x,y):
     ols = sum(numpy.square((y-yhat)))
     rmse = (ols/len(y))**0.5
     corr = numpy.corrcoef(y,yhat)
-    absME = sum(numpy.absolute(y-yhat))
+    absME = sum(numpy.absolute(y-yhat))/len(y)
     return absME ,rmse,corr
 
 def evaluate(model_list,x,y):

@@ -10,7 +10,7 @@ NONWORDS = re.compile('[\W_]+')
 STOPWORDS = stopwords.words('english')
 
 # read in a file
-def scan(filename, exclude_stopwords = False, binary_label = False):
+def scan(filename, exclude_stopwords = True, binary_label = True):
     data = []
     with open(filename, 'r') as f:
         while True:

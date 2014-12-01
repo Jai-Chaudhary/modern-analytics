@@ -5,7 +5,7 @@ logging.basicConfig(filename='logs/densityestimation.log',level=logging.DEBUG,fo
 import numpy as np
 import argparse
 import code.utils as utils
-from config import TRIP_DATA_1,EXAMPLE_DATA,F_FIELDS,S_FIELDS
+from config import TRIP_DATA_1,TRAIN_DATA,F_FIELDS,S_FIELDS
 import matplotlib.pyplot as plt
 
 # from sklearn.neighbors.kde import KernelDensity
@@ -20,7 +20,7 @@ MODELS = [ DEFAULT_MODEL]
 
 
 def EstimateDensity(dataset, model):
-	example_data = np.array([[row[1]] + row[-2:] for row in utils.load_csv_lazy(EXAMPLE_DATA, S_FIELDS,F_FIELDS,row_filter=utils.distance_filter)], dtype = float)
+	example_data = np.array([[row[1]] + row[-2:] for row in utils.load_csv_lazy(TRAIN_DATA, S_FIELDS,F_FIELDS,row_filter=utils.distance_filter)], dtype = float)
 	#example_data = example_data[:,:]
 	# plt.scatter(example_data[:,-2:-1], example_data[:,-1])
 	#params = {'bandwidth': np.logspace(-10, 1, 1)}
@@ -39,7 +39,7 @@ def EstimateDensity(dataset, model):
 	# print xmin,xmax,ymin,ymax
 	# X, Y = np.mgrid[xmin:xmax:100j, ymin:ymax:100j]
 	# print x, y
-	res = 200
+	res = 1000
 	freq1Pass = np.zeros((res, res), dtype=np.int)
 	freq3Pass = np.zeros((res, res), dtype=np.int)
 	freqTotalPass = np.ones((res, res), dtype=np.int) * 0.00000001

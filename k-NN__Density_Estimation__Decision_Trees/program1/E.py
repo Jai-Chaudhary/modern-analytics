@@ -33,10 +33,10 @@ def oneNN(trainOn, testOn):
     
     trainY = np.array([row[2] for row in utils.load_csv_lazy(TRAIN_DATA, S_FIELDS,F_FIELDS,row_filter=utils.distance_filter)], dtype = float)
     kspace = {'n_neighbors' : np.linspace(2, 3)}
-    grid_nbrs = GridSearchCV(KNeighborsRegressor(algorithm='ball_tree'),kspace, scoring='mean_squared_error' )
+    grid_nbrs = GridSearchCV(KNeighborsRegressor(algorithm='brute'),kspace, scoring='mean_squared_error' )
     grid_nbrs.fit(trainX[:trainOn], trainY[:trainOn])
     print "Train Complete"
-    
+    print "K = ", grid_nbrs.best_params_
     testX = np.array([[datestring_to_seconds_from_midnight(row[0])] + row[-5:] for row in utils.load_csv_lazy(TRIP_DATA_1, S_FIELDS,F_FIELDS,row_filter=utils.distance_filter)], dtype = float)
     testX = normalizer(testX)
     
@@ -46,8 +46,8 @@ def oneNN(trainOn, testOn):
 
 def main():
     parser = argparse.ArgumentParser( description = '1-Nearest Neighbour to predict trip_time' )
-    parser.add_argument( 'trainOn' , nargs = '?', type = int, default = 500, help = 'Number of data points to train on' )
-    parser.add_argument( 'testOn' , nargs = '?', type = int, default = 100, help = 'Number of data points to test on' )
+    parser.add_argument( 'trainOn' , nargs = '?', type = int, default = 500000, help = 'Number of data points to train on' )
+    parser.add_argument( 'testOn' , nargs = '?', type = int, default = 100000, help = 'Number of data points to test on' )
     args = parser.parse_args()
     oneNN( args.trainOn, args.testOn )
 
