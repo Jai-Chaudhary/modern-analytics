@@ -7,7 +7,17 @@ import collections
 import random
 import math
 from nltk.tokenize import sent_tokenize, word_tokenize, RegexpTokenizer
+from nltk.corpus import stopwords
+
 import itertools
+import string
+import pprint
+import pylab as pl
+from sklearn.naive_bayes import GaussianNB, MultinomialNB, BernoulliNB
+from sklearn.feature_extraction.text import CountVectorizer
+
+stop = stopwords.words('english')
+exclude = set(string.punctuation)
 
 prob_of_word_given_decade = {}
 log_sum_of_every_word_absence_per_decade = {}
@@ -114,13 +124,18 @@ def train_naive_bayes_model(movies_per_decade):
         word_freq_over_movies = collections.defaultdict(dict)
         for movie in movies:
             try:
-                words = collections.Counter(list(itertools.chain(*[word_tokenize(t) for t in sent_tokenize(movie['summary'].lower())])))
-                for (word, count) in words.iteritems():
+                # words = collections.Counter(list(itertools.chain(*[word_tokenize(t) for t in sent_tokenize(movie['summary'].lower())])))
+                filteredStr = ''.join(ch for ch in movie['summary'].lower() if ch not in exclude)
+                relevant_term_freq = collections.Counter([term for term in filteredStr.split() if term not in stop and len(term) > 2])
+                
+                for (word, count) in relevant_term_freq.iteritems():
                     word_freq_over_movies[word][count] = word_freq_over_movies[word].get(count, 0) + 1 
             except:
                 print movie['title']
+
         prob_of_word_given_decade[decade] = {}
         log_sum_of_every_word_absence_per_decade[decade] = 0
+
         for (word, pmf) in word_freq_over_movies.iteritems():
             prob_of_word_given_decade[decade][word] = {}
             for count in pmf:
@@ -129,33 +144,39 @@ def train_naive_bayes_model(movies_per_decade):
             prob_of_word_given_decade[decade][word][0] = 0.00001 if word_absence_prob == 0 else word_absence_prob
             log_sum_of_every_word_absence_per_decade[decade] += math.log(prob_of_word_given_decade[decade][word][0])
 
-def test_naive_bayes(movie):
+def test_naive_bayes(movie, exclude_word_list_per_decade):
     global prob_of_word_given_decade
     global log_sum_of_every_word_absence_per_decade
+    
+    log_posterior = {}
 
-    log_posterior = {'1930': -1000000, '1940': -1000000, '1950': -1000000, '1960': -1000000, '1970': -1000000, '1980': -1000000, '1990': -1000000, '2000': -1000000, '2010': -1000000}
+    # test_movie_word_freq = collections.Counter(list(itertools.chain(*[word_tokenize(t) for t in sent_tokenize(movie['summary'].lower())])))
+    filteredStr = ''.join(ch for ch in movie['summary'].lower() if ch not in exclude)
+    test_movie_word_freq = collections.Counter([term for term in filteredStr.split() if term not in stop and len(term) > 2])
 
-    try:
-        test_movie_word_freq = collections.Counter(list(itertools.chain(*[word_tokenize(t) for t in sent_tokenize(movie['summary'].lower())])))
+    for decade in prob_of_word_given_decade.keys():
+        log_posterior[decade] = log_sum_of_every_word_absence_per_decade[decade]
+        for word in test_movie_word_freq.keys():
+            if prob_of_word_given_decade[decade].get(word, -1) != -1 and word not in exclude_word_list_per_decade[decade]:
+                # if prob_of_word_given_decade[decade][word].get(test_movie_word_freq[word], -1) != -1:
+                    # log_posterior[decade] += math.log(prob_of_word_given_decade[decade][word][test_movie_word_freq[word]])
+                    # log_posterior[decade] -= math.log(prob_of_word_given_decade[decade][word][0])
+                # else:
+                #     print "Word not found with count"
+                #     print word, test_movie_word_freq[word]
+                #     log_posterior[decade] += -5
+                log_posterior[decade] += math.log(1 - prob_of_word_given_decade[decade][word][0])
+                log_posterior[decade] -= math.log(prob_of_word_given_decade[decade][word][0])
+            else:
+                # print "Word not found", word
+                log_posterior[decade] += -5
 
-        for decade in prob_of_word_given_decade.keys():
-            log_posterior[decade] = 0
-            for word in test_movie_word_freq.keys():
-                if prob_of_word_given_decade[decade].get(word, -1) != -1:
-                    if prob_of_word_given_decade[decade][word].get(test_movie_word_freq[word], -1) != -1:
-                        log_posterior[decade] += math.log(prob_of_word_given_decade[decade][word][test_movie_word_freq[word]])
-                        log_posterior[decade] -= math.log(prob_of_word_given_decade[decade][word][0])
-                    else:
-                        log_posterior[decade] += -5
-                else:
-                    log_posterior[decade] += -5
-    except:
-        print movie['title']
+
     return log_posterior
 
 def plot_posterior_histogram(test_movies):
     for movie in test_movies:
-        posterior = test_naive_bayes(movie)
+        posterior = test_naive_bayes(movie, [])
 
         normalizer = sum(posterior.values())
 
@@ -177,6 +198,100 @@ def plot_posterior_histogram(test_movies):
         plt.tight_layout()
         plt.show()
 
+def plot_cumulative_match_curve(train_movies_per_decade_sample, test_movies_per_decade_sample):
+    train_naive_bayes_model(train_movies_per_decade_sample)
+
+    cumulative_match = {}
+    for k in range(1,10):
+        cumulative_match[k] = 0
+        for decade, movies in test_movies_per_decade_sample.iteritems():
+            for movie in movies:
+                log_posterior = test_naive_bayes(movie, [])
+                if decade in dict(sorted(log_posterior.iteritems(), key=operator.itemgetter(1), reverse=True)[:k]).keys(): 
+                    cumulative_match[k] += 1
+    print cumulative_match
+
+def plot_confusion_matrix(train_movies_per_decade_sample, test_movies_per_decade_sample, exclude_word_list_per_decade):
+    train_naive_bayes_model(train_movies_per_decade_sample)
+
+    confusion_matrix = {}
+    for i, j in zip(range(1,10), range(1,10)):
+        for decade, movies in test_movies_per_decade_sample.iteritems():
+            confusion_matrix[decade] = {}
+            for movie in movies:
+                log_posterior = test_naive_bayes(movie, exclude_word_list_per_decade)
+                # confusion_matrix[actual_decade][predicted_decade]
+                predicted_decade = sorted(log_posterior.iteritems(), key=operator.itemgetter(1), reverse=True)[0][0]
+                confusion_matrix[decade][predicted_decade] = confusion_matrix[decade].get(predicted_decade, 0) + 1
+    pp = pprint.PrettyPrinter(indent=4)
+    pp.pprint(confusion_matrix)
+
+    pl.pcolor(np.array([[ confusion_matrix[actual_decade][decade] for decade in predicted_decades] for (actual_decade, predicted_decades) in confusion_matrix.iteritems()]))
+    pl.colorbar()
+    pl.show()
+
+
+def top_n_info_words(sampled_movies_per_decade, n):
+    word_presence_prob = collections.defaultdict(dict)
+    for decade, movies in sampled_movies_per_decade.iteritems():
+        word_freq_over_movies = collections.defaultdict(dict)
+        for movie in movies:
+            # words = collections.Counter(list(itertools.chain(*[word_tokenize(t) for t in sent_tokenize(movie['summary'].lower())])))
+            filteredStr = ''.join(ch for ch in movie['summary'].lower() if ch not in exclude)
+            relevant_term_freq = collections.Counter([term for term in filteredStr.split() if term not in stop and len(term) > 2])
+            
+            for (word, count) in relevant_term_freq.iteritems():
+                word_freq_over_movies[word][count] = word_freq_over_movies[word].get(count, 0) + 1 
+
+        prob_of_word_given_decade[decade] = {}
+        log_sum_of_every_word_absence_per_decade[decade] = 0
+
+        for (word, pmf) in word_freq_over_movies.iteritems():
+            prob_of_word_given_decade[decade][word] = {}
+            for count in pmf:
+                prob_of_word_given_decade[decade][word][count] = float(word_freq_over_movies[word][count])/ len(movies) 
+            word_presence_prob[word][decade] = sum(prob_of_word_given_decade[decade][word].values())
+
+    info_words_per_decade = collections.defaultdict(dict)    
+    for (word, decades) in word_presence_prob.iteritems():
+        for decade in decades.keys():
+            info_words_per_decade[decade][word] = word_presence_prob[word][decade] / min(word_presence_prob[word].values())
+    
+    top_n_info_words = {}
+    for (decade, words) in info_words_per_decade.iteritems():    
+        top_n_info_words[decade] = sorted(words.iteritems(), key=operator.itemgetter(1), reverse=True)[:n]
+
+    pp = pprint.PrettyPrinter(indent=4)
+    pp.pprint(top_n_info_words)
+
+    return top_n_info_words
+
+def confusion_matrix_strip_top_100_informative_words(sampled_movies_per_decade, train_movies_per_decade_sample, test_movies_per_decade_sample):
+    exclude_word_list_per_decade = top_n_info_words(sampled_movies_per_decade, 100)
+    
+    train_naive_bayes_model(train_movies_per_decade_sample)
+
+    plot_confusion_matrix(train_movies_per_decade_sample, test_movies_per_decade_sample, exclude_word_list_per_decade)
+
+
+def sklearn_naive_bayes(train_movies_sample, test_movies_sample):
+    count_vect = CountVectorizer()
+    gnb = GaussianNB()
+    
+    train_movies = {movie['summary'].decode('ascii', 'ignore').encode('utf-8'): str(10*int(int(movie['year'])/10)) for movie in train_movies_sample}
+    train_movie_data = count_vect.fit_transform(train_movies.keys()).toarray()
+    train_movie_target = train_movies.values()
+    print len(train_movie_data), len(train_movie_target)
+
+    test_movies = {movie['summary'].decode('ascii', 'ignore').encode('utf-8'): str(10*int(int(movie['year'])/10)) for movie in test_movies_sample}
+    test_movie_data = count_vect.transform(test_movies.keys()).toarray()
+    test_movie_target = test_movies.values()
+    print len(test_movie_data), len(test_movie_target)
+
+    gnb_fitted =  gnb.fit(train_movie_data, train_movie_target)
+
+    print gnb_fitted.score(test_movie_data, test_movie_target)
+
 if __name__ == '__main__':
     all_movies = list(load_all_movies("plot.list.gz"))
     movies_per_decade = {'1930':[], '1940':[], '1950':[], '1960':[], '1970':[], '1980':[], '1990':[], '2000':[], '2010':[]}
@@ -184,6 +299,7 @@ if __name__ == '__main__':
 
     for current_movie in all_movies:
         movies_per_decade[str(10*int(int(current_movie['year'])/10))].append(current_movie)
+        
         if 'Finding Nemo' == current_movie['title']:
             test_movies_to_plot.append(current_movie)
         elif 'The Matrix' == current_movie['title']:
@@ -195,23 +311,37 @@ if __name__ == '__main__':
         elif 'Avatar' == current_movie['title'] and current_movie['year'] == 2009:
             test_movies_to_plot.append(current_movie)
 
-    sampled_movies_per_decade = {decade: random.sample(movies, 6000) for (decade, movies) in movies_per_decade.iteritems()}
+    sampled_movies_per_decade = {decade: random.sample(movies, 1000) for (decade, movies) in movies_per_decade.iteritems()}
     train_movies_per_decade_sample = {decade: [movies[i] for i in range(len(movies)) if i % 2 == 0] for (decade, movies) in sampled_movies_per_decade.iteritems()}
     test_movies_per_decade_sample = {decade: [movies[i] for i in range(len(movies)) if i % 2 != 0] for (decade, movies) in sampled_movies_per_decade.iteritems()}
 
-    # sampled_movies =  reduce(lambda x, y: x+y, sampled_movies_per_decade.values())
+    sampled_movies =  reduce(lambda x, y: x+y, sampled_movies_per_decade.values())
+    train_movies_sample =  reduce(lambda x, y: x+y, train_movies_per_decade_sample.values())
+    test_movies_sample =  reduce(lambda x, y: x+y, test_movies_per_decade_sample.values())
     # plot_count_per_decade()
     # plot_count_per_decade_given_word("zombie", sampled_movies)
-    train_naive_bayes_model(train_movies_per_decade_sample)
-    true_positive = {'1930': 0, '1940': 0, '1950': 0, '1960': 0, '1970': 0, '1980': 0, '1990': 0, '2000': 0, '2010': 0}
+
+    # train_naive_bayes_model(train_movies_per_decade_sample)
+    # true_positive = {'1930': 0, '1940': 0, '1950': 0, '1960': 0, '1970': 0, '1980': 0, '1990': 0, '2000': 0, '2010': 0}
     
-    for decade, movies in test_movies_per_decade_sample.iteritems():
-        for movie in movies:
-            log_posterior = test_naive_bayes(movie)
-            if max(log_posterior.iteritems(), key=operator.itemgetter(1))[0] == decade:
-                true_positive[decade] += 1
-    print true_positive
+    # for decade, movies in test_movies_per_decade_sample.iteritems():
+    #     for movie in movies:
+    #         log_posterior = test_naive_bayes(movie, [])
+    #         if max(log_posterior.iteritems(), key=operator.itemgetter(1))[0] == decade:
+    #             true_positive[decade] += 1
+    # print true_positive
 
     # plot_posterior_histogram(test_movies_to_plot)
+
+    # plot_cumulative_match_curve(train_movies_per_decade_sample, test_movies_per_decade_sample)
+    # plot_confusion_matrix(train_movies_per_decade_sample, test_movies_per_decade_sample)
+
+    # top_n_info_words(sampled_movies_per_decade, 10)
+
+    # confusion_matrix_strip_top_100_informative_words(sampled_movies_per_decade, train_movies_per_decade_sample, test_movies_per_decade_sample)
+    
+    sklearn_naive_bayes(train_movies_sample, test_movies_sample)
+
+    
     # len(all_movies)
     # => 379451
